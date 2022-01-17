@@ -4,75 +4,14 @@ let mqttMessageSchema = mongoose.Schema(
   {
     macAddress: {
       type: String,
-      required: true,
     },
-    Alive: {
+    longitude: {
       type: String,
     },
-    TotalRunningTime: {
+    latitude: {
       type: String,
     },
-    TotalSessionCount: {
-      type: String,
-    },
-    TotalSessionCorrectlyEnded: {
-      type: String,
-    },
-    TotalSessionEndedBeforeTime: {
-      type: String,
-    },
-    TotalSessionNotEndedCorrectly: {
-      type: String,
-    },
-    StartSession: {
-      type: String,
-    },
-    EndSession: {
-      type: String,
-    },
-    EndSessionType: {
-      type: String,
-    },
-    Temperature: {
-      type: String,
-    },
-    AnemometerSensor: {
-      type: String,
-    },
-    PresencePhases: {
-      type: String,
-    },
-    SensorFilters: {
-      type: String,
-    },
-    LampMaintenance: {
-      type: String,
-    },
-    AnnualMaintenance: {
-      type: String,
-    },
-    ActualLastTemp: {
-      type: String,
-    },
-    HighestTemp: {
-      type: String,
-    },
-    PowerFactorCorrection: {
-      type: String,
-    },
-    PFDeviationFromOptimalLevel: {
-      type: String,
-    },
-    LastFanSpeed: {
-      type: String,
-    },
-    InputVoltage: {
-      type: String,
-    },
-    Transmission: {
-      type: String,
-    },
-    Message: {
+    trackingId: {
       type: String,
     },
   },

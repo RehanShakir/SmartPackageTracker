@@ -1,9 +1,12 @@
 import "../assets/styles/main.css";
 import React, { useEffect, useState, useRef } from "react";
 import history from "../utils/CreateBrowserHistory";
+import copy from "clipboard-copy";
 
 import taggtoday from "../api/taggtoday";
 import Admin from "./Admin";
+import AwsMap from "./AwsMap";
+import randomstring from "randomstring";
 import {
   Row,
   Col,
@@ -16,7 +19,11 @@ import {
   Form,
   message,
   Select,
+  Typography,
 } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
+
+const { Paragraph } = Typography;
 
 const { Option } = Select;
 
@@ -29,21 +36,37 @@ const Data = () => {
   const myRef = useRef(null);
   const myRef1 = useRef(null);
   const componentMounted = useRef(true);
-  let publishMsgObj = {
-    MachineSerialNumber: "",
-    MachineType: "",
-    CorrectPF: "",
-    PaymentSystem: "",
-    InstallDate: "",
-  };
+  // let publishMsgObj = {
+  //   MachineSerialNumber: "",
+  //   MachineType: "",
+  //   CorrectPF: "",
+  //   PaymentSystem: "",
+  //   InstallDate: "",
+  // };
 
   const [data, setData] = useState([]);
   const [macAddress, setMacAddress] = useState("");
   const [userMacAddress, setUserMacAddress] = useState([]);
-  const [userType, setUserType] = useState("");
-  const [checkedList, setCheckedList] = useState({});
+  const [locationData, setLocationData] = useState("");
+  // const [userType, setUserType] = useState("");
+  // const [checkedList, setCheckedList] = useState({});
 
   // let intervalId = null;
+
+  const getLocationParams = async () => {
+    console.log("iND LAT DO");
+    const macAddress = localStorage.getItem("macAddress");
+    // console.log("Calling");
+    await taggtoday
+      .get(`/api/mqtt/tracking/${macAddress}`)
+      .then((res) => {
+        console.log(res.data);
+        setLocationData(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
 
   // const executeScroll = () => myRef.current.scrollIntoView();
   // const executeScroll1 = () => myRef1.current.scrollIntoView();
@@ -67,14 +90,14 @@ const Data = () => {
       }
     }, [delay]);
   };
-  const taggtodayDeviceData = () => {
+  const taggtodayDeviceData = async () => {
     if (localStorage.getItem("user-info")) {
       history.push("/data");
     } else {
       history.push("/sign-in");
     }
     // console.log("Calling");
-    taggtoday
+    await taggtoday
       .post("/api/mqtt/getOne", {
         macAddress: localStorage.getItem("macAddress"),
       })
@@ -86,31 +109,32 @@ const Data = () => {
         //   "AnnualMaintenance",
         //   res.data[0].AnnualMaintenance
         // );
-        if (componentMounted.current) {
-          // if (res.data[0].LampMaintenance === "") {
-          setData(null);
-          // } else {
-          setData(res.data);
-          // }
-        }
+
+        // if (res.data[0].LampMaintenance === "") {
+        // setData(null);
+        // } else {
+        setData(res.data);
+        // }
       })
       .catch((err) => {
         console.log(err);
       });
-    taggtoday
-      .get("/api/check")
-      .then((res) => {
-        // console.log(res.data[0]);
-        setCheckedList(res.data[0]);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    // taggtoday
+    //   .get("/api/check")
+    //   .then((res) => {
+    //     // console.log(res.data[0]);
+    //     setCheckedList(res.data[0]);
+    //   })
+    //   .catch((err) => {
+    //     console.log(err);
+    //   });
   };
   useEffect(() => {
     // console.log("In USE");
 
     taggtodayDeviceData();
+    getLocationParams();
+
     return () => {
       componentMounted.current = false;
     };
@@ -120,66 +144,67 @@ const Data = () => {
   useInterval(() => {
     // Make the request here
     taggtodayDeviceData();
+    getLocationParams();
   }, 1000 * 60);
 
   //Input Function
 
-  const onChangeMachineType = (e) => {
-    // console.log(e.target.value);
-    publishMsgObj.MachineType = e.target.value;
-  };
-  const onChangeMachineSerialNumber = (e) => {
-    // console.log(e.target.value);
-    publishMsgObj.MachineSerialNumber = e.target.value;
-  };
-  const onChangeCorrectPF = (e) => {
-    // console.log(e.target.value);
-    publishMsgObj.CorrectPF = e.target.value;
-  };
-  const handleChangePaymentSystem = (value) => {
-    // console.log(value);
-    publishMsgObj.PaymentSystem = value;
-  };
-  const onChangeInstallDate = (e) => {
-    // console.log(e.target.value);
-    publishMsgObj.InstallDate = e.target.value;
-  };
-  // console.log("OBJ");
+  // const onChangeMachineType = (e) => {
+  //   // console.log(e.target.value);
+  //   publishMsgObj.MachineType = e.target.value;
+  // };
+  // const onChangeMachineSerialNumber = (e) => {
+  //   // console.log(e.target.value);
+  //   publishMsgObj.MachineSerialNumber = e.target.value;
+  // };
+  // const onChangeCorrectPF = (e) => {
+  //   // console.log(e.target.value);
+  //   publishMsgObj.CorrectPF = e.target.value;
+  // };
+  // const handleChangePaymentSystem = (value) => {
+  //   // console.log(value);
+  //   publishMsgObj.PaymentSystem = value;
+  // };
+  // const onChangeInstallDate = (e) => {
+  //   // console.log(e.target.value);
+  //   publishMsgObj.InstallDate = e.target.value;
+  // };
+  // // console.log("OBJ");
 
-  const hanldleTransmitClick = () => {
-    // console.log(JSON.stringify(publishMsgObj));
-    publishToMqtt("fieldData", JSON.stringify(publishMsgObj));
-  };
+  // const hanldleTransmitClick = () => {
+  //   // console.log(JSON.stringify(publishMsgObj));
+  //   publishToMqtt("fieldData", JSON.stringify(publishMsgObj));
+  // };
 
-  const publishToMqtt = (topic, msg) => {
-    let macaddress = localStorage.getItem("macAddress");
+  // const publishToMqtt = (topic, msg) => {
+  //   let macaddress = localStorage.getItem("macAddress");
 
-    taggtoday
-      .post(`/api/mqtt/publish/${macaddress}/${topic}`, {
-        message: msg,
-      })
-      .then((res) => {
-        // console.log(res);
+  //   taggtoday
+  //     .post(`/api/mqtt/publish/${macaddress}/${topic}`, {
+  //       message: msg,
+  //     })
+  //     .then((res) => {
+  //       // console.log(res);
 
-        message.success("Message Published");
-      })
-      .catch((err) => {
-        // console.log("In err");
-        console.log(err);
-      });
-  };
-  const handlePollClick = () => {
-    publishToMqtt("poll", "poll");
-  };
+  //       message.success("Message Published");
+  //     })
+  //     .catch((err) => {
+  //       // console.log("In err");
+  //       console.log(err);
+  //     });
+  // };
+  // const handlePollClick = () => {
+  //   publishToMqtt("poll", "poll");
+  // };
 
-  const setVisible = (visible) => {
-    // console.log(checkedList[`${visible}`]);
-    if (checkedList[`${visible}`] === true) {
-      return true;
-    } else {
-      return false;
-    }
-  };
+  // const setVisible = (visible) => {
+  //   // console.log(checkedList[`${visible}`]);
+  //   if (checkedList[`${visible}`] === true) {
+  //     return true;
+  //   } else {
+  //     return false;
+  //   }
+  // };
 
   const columns = [
     {
@@ -230,14 +255,18 @@ const Data = () => {
     const token = localStorage.getItem("user-info");
     const user = parseJwt(token);
     // console.log(user.id);
+    console.log(user.id);
 
     return user.id;
   };
   //Form Functions
   const onFinish = async (values) => {
     const id = getIdofLoggedInUser();
+    console.log(id);
     const hide = message.loading("Processing", 0);
     // console.log(id);
+
+    console.log(values.macAddress);
     await taggtoday
       .put(`/api/users/update/${id}`, {
         macAddress: values.macAddress,
@@ -259,6 +288,28 @@ const Data = () => {
 
         console.log(err);
       });
+    const trackingId = randomstring.generate(15);
+    let formData = new FormData();
+    formData.append("trackingId", trackingId);
+    formData.append("macAddress", values.macAddress);
+    formData.append("startLat", values.startLat);
+    formData.append("startLong", values.startLong);
+    formData.append("endLat", values.endLat);
+    formData.append("endLong", values.endLong);
+
+    await taggtoday
+      .post("/api/mqtt", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((res) => {
+        console.log("done");
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
 
   const onFinishFailed = (errorInfo) => {
@@ -271,6 +322,9 @@ const Data = () => {
 
     setMacAddress(localStorage.getItem("macAddress", value));
     // console.log(`selected ${localStorage.getItem("macAddress", value)}`);
+  }
+  function copyto() {
+    copy(locationData.trackingId);
   }
 
   const getMacAddresses = async () => {
@@ -342,6 +396,70 @@ const Data = () => {
                   style={{ paddingTop: 23.5, paddingBottom: 23.5 }}
                 />
               </Form.Item>
+              <Form.Item
+                className="username"
+                label="Start Point"
+                name="startLat"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please Enter Latitiude",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Enter Latitiude"
+                  style={{ paddingTop: 23.5, paddingBottom: 23.5 }}
+                />
+              </Form.Item>
+              <Form.Item
+                className="username"
+                label=""
+                name="startLong"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please Enter Longitude",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Enter Longitude"
+                  style={{ paddingTop: 23.5, paddingBottom: 23.5 }}
+                />
+              </Form.Item>
+              <Form.Item
+                className="username"
+                label="End Point"
+                name="endLat"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please Enter Latitiude",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Enter Latitiude"
+                  style={{ paddingTop: 23.5, paddingBottom: 23.5 }}
+                />
+              </Form.Item>
+              <Form.Item
+                className="username"
+                label=""
+                name="endLong"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please Enter Longitude",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Enter Longitude"
+                  style={{ paddingTop: 23.5, paddingBottom: 23.5 }}
+                />
+              </Form.Item>
 
               <Form.Item>
                 <Button
@@ -355,7 +473,6 @@ const Data = () => {
             </Form>
           </Modal>
         </div>
-
         <Select
           className="mac-search"
           defaultValue={localStorage.getItem("macAddress")}
@@ -373,6 +490,12 @@ const Data = () => {
                 className="criclebox tablespace mb-24"
                 title="Taggtoday Device"
               >
+                <div style={{ display: "flex" }}>
+                  <h4>Device Tracking Id: </h4>{" "}
+                  <Paragraph copyable>{locationData.trackingId}</Paragraph>
+                </div>
+                {/* <CopyOutlined onClick={copyto} /> */}
+                {/* <Copyable>{locationData.trackingId}</Copyable> */}
                 <div className="table-responsive">
                   <Table
                     key="enCol"
@@ -386,6 +509,11 @@ const Data = () => {
             </Col>
           </Row>
         </div>
+        {locationData && data.length > 0 ? (
+          <AwsMap locationData={locationData} data={data} />
+        ) : (
+          ""
+        )}
       </>
     );
   } else if (localStorage.getItem("userType") === "admin") {

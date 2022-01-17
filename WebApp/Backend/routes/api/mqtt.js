@@ -2,14 +2,20 @@ const mqtt = require("mqtt");
 const express = require("express");
 const router = express.Router();
 const mqttMessgae = require("../../models/mqttmessage");
+const trackId = require("../../models/tracking");
 const date = new Date();
 
-const topic = "smartdata/#";
+const topic = "taggtoday/#";
 const host = "34.214.65.82";
 const port = "1883";
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
 const connectUrl = `mqtt://${host}:${port}`;
 let client;
+
+let deviceDetails = {
+  macAddress: "",
+  trackingId: "",
+};
 
 //Get all Devices Data
 router.get("/", async (req, res) => {
@@ -33,7 +39,7 @@ router.post("/getOne", async (req, res) => {
     res.status(400).send(err.message);
   }
 });
-router.put("/", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     client = mqtt.connect(connectUrl, {
       clientId,
@@ -48,6 +54,20 @@ router.put("/", async (req, res) => {
       console.log("Connected");
       client.subscribe([topic], () => {
         console.log(`Subscribe to topic '${topic}'`);
+
+        deviceDetails.macAddress = req.body.macAddress;
+        deviceDetails.trackingId = req.body.trackingId;
+
+        let tracking = new trackId({
+          macAddress: req.body.macAddress,
+          trackingId: req.body.trackingId,
+          startLat: req.body.startLat,
+          startLong: req.body.startLong,
+          endLat: req.body.endLat,
+          endLong: req.body.endLong,
+        });
+        tracking.save();
+        console.log("duon");
       });
     });
 
@@ -56,64 +76,16 @@ router.put("/", async (req, res) => {
       console.log("Received Message:", topic, message);
 
       const macAdrs = topic.split("/");
+      console.log(deviceDetails);
 
       console.log(message);
-      let macAd = message.macAddress;
-      let mqttMsg = await mqttMessgae.findOneAndUpdate(
-        { macAd },
-        {
-          macAddress: message.macAddress,
-          Alive: message.Alive,
-          TotalRunningTime: message.TotalRunningTime,
-          TotalSessionCount: message.TotalSessionCount,
-          TotalSessionCorrectlyEnded: message.TotalSessionCorrectlyEnded,
-          TotalSessionEndedBeforeTime: message.TotalSessionEndedBeforeTime,
-          TotalSessionNotEndedCorrectly: message.TotalSessionNotEndedCorrectly,
-          StartSession: message.StartSession,
-          EndSession: message.EndSession,
-          EndSessionType: message.EndSessionType,
-          Temperature: message.Temperature,
-          AnemometerSensor: message.AnemometerSensor,
-          PresencePhases: message.PresencePhases,
-          SensorFilters: message.SensorFilters,
-          LampMaintenance: message.LampMaintenance,
-          AnnualMaintenance: message.AnnualMaintenance,
-          ActualLastTemp: message.ActualLastTemp,
-          HighestTemp: message.HighestTemp,
-          PowerFactorCorrection: message.PowerFactorCorrection,
-          PFDeviationFromOptimalLevel: message.PFDeviationFromOptimalLevel,
-          LastFanSpeed: message.LastFanSpeed,
-          InputVoltage: message.InputVoltage,
-          Message: message.Message,
-        }
-      );
+      // let macAd = message.macAddress;
+      let mqttMsg = new mqttMessgae({
+        macAddress: message.macAddress,
+        longitude: message.longitude,
+        latitude: message.latitude,
+      });
       mqttMsg.save();
-      // let MqttMessgae = new mqttMessgae(,{
-      //   macAddress: message.macAddress,
-      //   Alive: message.Alive,
-      //   TotalRunningTime: message.TotalRunningTime,
-      //   TotalSessionCount: message.TotalSessionCount,
-      //   TotalSessionCorrectlyEnded: message.TotalSessionCorrectlyEnded,
-      //   TotalSessionEndedBeforeTime: message.TotalSessionEndedBeforeTime,
-      //   TotalSessionNotEndedCorrectly: message.TotalSessionNotEndedCorrectly,
-      //   StartSession: message.StartSession,
-      //   EndSession: message.EndSession,
-      //   EndSessionType: message.EndSessionType,
-      //   Temperature: message.Temperature,
-      //   AnemometerSensor: message.AnemometerSensor,
-      //   PresencePhases: message.PresencePhases,
-      //   SensorFilters: message.SensorFilters,
-      //   LampMaintenance: message.LampMaintenance,
-      //   AnnualMaintenance: message.AnnualMaintenance,
-      //   ActualLastTemp: message.ActualLastTemp,
-      //   HighestTemp: message.HighestTemp,
-      //   PowerFactorCorrection: message.PowerFactorCorrection,
-      //   PFDeviationFromOptimalLevel: message.PFDeviationFromOptimalLevel,
-      //   LastFanSpeed: message.LastFanSpeed,
-      //   InputVoltage: message.InputVoltage,
-      //   Message: message.Message,
-      // });
-      // MqttMessgae.save();
     });
     res.send("DATA SAVED");
   } catch (err) {
@@ -141,4 +113,48 @@ router.post("/publish/:macAddress/:button", async (req, res) => {
   }
 });
 
+router.get("/tracking/:macAddress", async (req, res) => {
+  try {
+    console.log(req.params.macAddress);
+    let track = await trackId.findOne({ macAddress: req.params.macAddress });
+    return res.status(200).send(track);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+router.post("/tracking", async (req, res) => {
+  try {
+    let track = new trackId({
+      macAddress: req.body.macAddress,
+      trackingId: req.body.trackingId,
+      startLat: req.body.startLat,
+      startLong: req.body.startLong,
+      endLat: req.body.endLat,
+      endLong: req.body.endLong,
+    });
+    track.save();
+    return res.status(200).send("Saved");
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+router.get("/longlat/:macAddress", async (req, res) => {
+  try {
+    let mqtt = await mqttMessgae.find({ macAddress: req.params.macAddress });
+    return res.status(200).send(mqtt);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+router.get("/packageTrack/:trackingId", async (req, res) => {
+  try {
+    let track = await trackId.findOne({ trackingId: req.params.trackingId });
+    return res.status(200).send(track);
+  } catch (e) {
+    console.log(e);
+  }
+});
 module.exports = router;

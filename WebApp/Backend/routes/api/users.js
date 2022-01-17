@@ -97,7 +97,7 @@ router.put("/update/:id", async (req, res) => {
     console.log(found);
     if (found) {
       console.log("Already exist");
-      return res.status(200).send("This MacAddress is already exist");
+      return res.status(400).send("This MacAddress is already exist");
     }
     let user = await UserModel.findByIdAndUpdate(req.params.id, {
       $push: { macAddress: req.body.macAddress },
@@ -106,37 +106,7 @@ router.put("/update/:id", async (req, res) => {
     let checkInMqtt = await mqttMessageModel.findOne({
       macAddress: req.body.macAddress,
     });
-    // console.log(checkInMqtt);
-    if (checkInMqtt) {
-      return res.status(200).send("Mac Address Added");
-    } else {
-      let mqttMessage = new mqttMessageModel({
-        macAddress: req.body.macAddress,
-        Alive: "",
-        TotalRunningTime: "",
-        TotalSessionCount: "",
-        TotalSessionCorrectlyEnded: "",
-        TotalSessionEndedBeforeTime: "",
-        TotalSessionNotEndedCorrectly: "",
-        StartSession: "",
-        EndSession: "",
-        EndSessionType: "",
-        Temperature: "",
-        AnemometerSensor: "",
-        PresencePhases: "",
-        SensorFilters: "",
-        LampMaintenance: "",
-        AnnualMaintenance: "",
-        ActualLastTemp: "",
-        HighestTemp: "",
-        PowerFactorCorrection: "",
-        PFDeviationFromOptimalLevel: "",
-        LastFanSpeed: "",
-        InputVoltage: "",
-        Message: "",
-      });
-      mqttMessage.save();
-    }
+
     return res.send("Data saved");
   } catch (err) {
     console.log(err);

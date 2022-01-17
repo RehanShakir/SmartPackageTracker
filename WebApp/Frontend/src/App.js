@@ -5,6 +5,7 @@ import Data from "./pages/Data";
 import Settings from "./pages/Settings";
 import SignUp from "./pages/SignUp";
 import SignIn from "./pages/SignIn";
+import Track from "./pages/Track";
 import Main from "./components/layout/Main";
 import "antd/dist/antd.css";
 import "./assets/styles/main.css";
@@ -16,6 +17,8 @@ function App() {
       <Switch>
         <Route path="/sign-up" exact component={SignUp} />
         <Route path="/sign-in" exact component={SignIn} />
+        <Route path="/track" exact component={Track} />
+
         <Main>
           <Redirect strict from="/" to="/data" />
           <Route path="/data">
